@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot - EcoImpacto</title>
+</head>
+<body>
+    <section id="bot" class="py-16 bg-gray-50">
+  <div class="max-w-2xl mx-auto px-4">
+    <h2 class="text-3xl font-bold text-green-700 mb-4 text-center">🤖 Bot Diagnóstico Educativo</h2>
+    <p class="text-center text-gray-600 mb-6">
+      Responda algumas perguntas e receba dicas ambientais baseadas na sua realidade local.
+    </p>
+
+    <!-- Janela do chat -->
+    <div id="chatBox" class="bg-white border rounded-lg p-4 h-96 overflow-y-auto shadow mb-4">
+      <!-- Mensagens do chat serão inseridas aqui -->
+    </div>
+
+    <!-- Formulário de entrada -->
+    <form id="chatForm" class="flex">
+      <input type="text" id="userInput" placeholder="Digite sua resposta..." required
+        class="flex-1 border border-gray-300 rounded-l-md p-2 focus:outline-none" />
+      <button type="submit"
+        class="bg-green-600 text-white px-4 rounded-r-md hover:bg-green-700 transition">Enviar</button>
+    </form>
+  </div>
+</section>
+
+<script>
+  const chatBox = document.getElementById("chatBox");
+  const chatForm = document.getElementById("chatForm");
+  const userInput = document.getElementById("userInput");
+
+  let etapa = 0;
+
+  const mensagens = [
+    "Olá! Sou o Bot Diagnóstico. Vamos identificar problemas ambientais na sua área!",
+    "Há muitas árvores na sua rua?",
+    "Você vê lixo acumulado com frequência?",
+    "As calçadas alagam quando chove?",
+    "Obrigado! Aqui vão algumas dicas baseadas no que você relatou:"
+  ];
+
+  const respostas = [];
+
+  function adicionarMensagem(mensagem, tipo = "bot") {
+    const msg = document.createElement("div");
+    msg.className = `mb-2 p-2 rounded-md ${tipo === "bot" ? "bg-green-100 text-green-800" : "bg-gray-200 text-gray-800 text-right"}`;
+    msg.textContent = mensagem;
+    chatBox.appendChild(msg);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  // Início do chat
+  adicionarMensagem(mensagens[0]);
+  setTimeout(() => adicionarMensagem(mensagens[1]), 1000);
+
+  chatForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const texto = userInput.value.trim();
+    if (!texto) return;
+
+    adicionarMensagem(texto, "user");
+    respostas.push(texto.toLowerCase());
+    userInput.value = "";
+
+    etapa++;
+
+    if (etapa < mensagens.length - 1) {
+      setTimeout(() => adicionarMensagem(mensagens[etapa + 1]), 600);
+    } else {
+      // Diagnóstico simulado baseado nas respostas
+      setTimeout(() => {
+        let respostaFinal = "";
+
+        if (respostas[1]?.includes("não")) {
+          respostaFinal += "🌳 A falta de árvores pode elevar a temperatura local. Que tal plantar uma muda na sua rua?\n";
+        }
+        if (respostas[2]?.includes("sim")) {
+          respostaFinal += "🗑️ O lixo acumulado pode atrair vetores de doenças. Tente organizar um mutirão comunitário de limpeza!\n";
+        }
+        if (respostas[3]?.includes("sim")) {
+          respostaFinal += "🌧️ O alagamento pode estar relacionado ao entupimento de bueiros. Uma boa ação é reportar à prefeitura e evitar jogar lixo nas ruas.\n";
+        }
+
+        if (!respostaFinal) {
+          respostaFinal = "✅ Parece que sua região está com boa saúde ambiental! Continue cuidando bem dela. 💚";
+        }
+
+        adicionarMensagem(respostaFinal);
+      }, 800);
+    }
+  });
+</script>
+
+<section id="bot" class="py-16 bg-gray-50">
+  <div class="max-w-2xl mx-auto px-4">
+    <h2 class="text-3xl font-bold text-green-700 mb-4 text-center">🤖 Bot Diagnóstico Educativo</h2>
+    <p class="text-center text-gray-600 mb-6">
+      Vamos conversar sobre o meio ambiente da sua região!
+    </p>
+
+    <!-- Chat box -->
+    <div id="chatBox" class="bg-white border rounded-lg p-4 h-96 overflow-y-auto shadow mb-4"></div>
+
+    <!-- Formulário -->
+    <form id="chatForm" class="flex gap-2">
+      <input type="text" id="userInput" placeholder="Digite sua resposta..." required
+        class="flex-1 border border-gray-300 rounded-md p-2" />
+      <button type="submit"
+        class="bg-green-600 text-white px-4 rounded-md hover:bg-green-700 transition">Enviar</button>
+    </form>
+
+    <!-- Upload de imagem -->
+    <div id="uploadSection" class="mt-4 hidden">
+      <label class="block text-sm mb-1">📷 Enviar uma foto do problema:</label>
+      <input type="file" id="fileInput" accept="image/*" class="w-full border rounded-md p-2" />
+    </div>
+  </div>
+</section>
+
+<script>
+  const perguntas = [
+    { texto: "Olá! Vamos começar o diagnóstico. Há muitas árvores na sua rua?", id: "arvores" },
+    { texto: "Você vê lixo acumulado com frequência?", id: "lixo" },
+    { texto: "As calçadas alagam quando chove?", id: "alagamento" }
+  ];
+
+  const respostasUsuario = {};
+  let etapa = 0;
+
+  const chatBox = document.getElementById("chatBox");
+  const chatForm = document.getElementById("chatForm");
+  const userInput = document.getElementById("userInput");
+  const uploadSection = document.getElementById("uploadSection");
+
+  function adicionarMensagem(texto, tipo = "bot", imagem = null) {
+    const msg = document.createElement("div");
+    msg.className = `mb-2 p-2 rounded-md whitespace-pre-wrap ${tipo === "bot"
+      ? "bg-green-100 text-green-800"
+      : "bg-gray-200 text-gray-800 text-right"}`;
+    msg.textContent = texto;
+    chatBox.appendChild(msg);
+
+    if (imagem) {
+      const img = document.createElement("img");
+      img.src = imagem;
+      img.alt = "Imagem explicativa";
+      img.className = "w-32 mt-2 rounded shadow";
+      chatBox.appendChild(img);
+    }
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  // Inicia a conversa
+  adicionarMensagem(perguntas[0].texto);
+
+  chatForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const resposta = userInput.value.trim();
+    if (!resposta) return;
+
+    // Mostra resposta do usuário
+    adicionarMensagem(resposta, "user");
+    const perguntaAtual = perguntas[etapa];
+    respostasUsuario[perguntaAtual.id] = resposta.toLowerCase();
+    userInput.value = "";
+
+    etapa++;
+
+    // Próxima pergunta ou diagnóstico
+    if (etapa < perguntas.length) {
+      setTimeout(() => adicionarMensagem(perguntas[etapa].texto), 600);
+    } else {
+      setTimeout(() => gerarDiagnostico(respostasUsuario), 800);
+    }
+  });
+
+  function gerarDiagnostico(respostas) {
+    adicionarMensagem("Analisando respostas...");
+
+    setTimeout(() => {
+      let respostaFinal = "📊 Diagnóstico:\n\n";
+
+      if (respostas.arvores.includes("não")) {
+        respostaFinal += "🌳 Poucas árvores detectadas. Incentive o plantio de mudas nativas!\n";
+      }
+
+      if (respostas.lixo.includes("sim")) {
+        respostaFinal += "🗑️ Lixo frequente: Organize um mutirão ou denuncie áreas críticas.\n";
+      }
+
+      if (respostas.alagamento.includes("sim")) {
+        respostaFinal += "🌧️ Risco de alagamento: Pode haver entupimento de bueiros. Evite descarte irregular!\n";
+      }
+
+      if (respostaFinal === "📊 Diagnóstico:\n\n") {
+        respostaFinal += "✅ Sua região aparenta estar bem cuidada! Continue com boas práticas! 💚";
+      }
+
+      adicionarMensagem(respostaFinal, "bot", "https://cdn-icons-png.flaticon.com/512/1850/1850628.png");
+
+      // Mostra botão de upload
+      uploadSection.classList.remove("hidden");
+    }, 1000);
+  }
+</script>
+
+<!-- Seção de Gamificação + Ranking + Relatórios com Exportação PDF -->
+<section class="py-16 bg-white" id="gamificacao">
+  <div class="max-w-6xl mx-auto px-4">
+    <h2 class="text-3xl font-bold text-green-700 mb-6 text-center">🏆 Gamificação e Relatórios</h2>
+
+    <!-- Desafios e Selos -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+      <div class="bg-green-50 p-6 rounded-xl shadow">
+        <h3 class="text-xl font-semibold mb-2">🎖️ Seus Selos</h3>
+        <ul class="list-disc ml-6 text-green-800">
+          <li>Guardião da Natureza 🌱</li>
+          <li>Caçador de Lixo Urbano 🗑️</li>
+          <li>Alerta de Alagamento 🌊</li>
+        </ul>
+      </div>
+
+      <div class="bg-blue-50 p-6 rounded-xl shadow">
+        <h3 class="text-xl font-semibold mb-2">🔥 Desafios Sustentáveis</h3>
+        <ol class="list-decimal ml-6 text-blue-800">
+          <li>Relate 3 problemas diferentes no bairro</li>
+          <li>Participe de uma ação comunitária</li>
+          <li>Complete o quiz ambiental</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- Ranking de Bairros -->
+    <div class="mb-12">
+      <h3 class="text-2xl font-bold text-center text-gray-800 mb-4">📍 Ranking de Bairros Mais Ativos</h3>
+      <table class="w-full table-auto text-left border">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="p-2">#</th>
+            <th class="p-2">Bairro</th>
+            <th class="p-2">Relatos</th>
+          </tr>
+        </thead>
+        <tbody id="rankingBairros">
+          <tr><td class="p-2">1</td><td class="p-2">Centro</td><td class="p-2">24</td></tr>
+          <tr><td class="p-2">2</td><td class="p-2">Jardim das Flores</td><td class="p-2">18</td></tr>
+          <tr><td class="p-2">3</td><td class="p-2">Parque Sul</td><td class="p-2">12</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Gráficos e PDF -->
+    <div class="text-center">
+      <h3 class="text-2xl font-bold text-gray-800 mb-4">📊 Relatórios Visuais</h3>
+      <canvas id="graficoClima" class="mx-auto mb-6 max-w-xl"></canvas>
+      <button onclick="gerarPDF()" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition">
+        ⬇️ Exportar Relatório PDF
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- Scripts: Chart.js + PDF export -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+  // Exemplo de gráfico
+  const ctx = document.getElementById('graficoClima');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Centro', 'Jardim das Flores', 'Parque Sul'],
+      datasets: [{
+        label: 'Relatos Ambientais',
+        data: [24, 18, 12],
+        backgroundColor: ['#22c55e', '#3b82f6', '#f97316']
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  // Exportação para PDF
+  async function gerarPDF() {
+    const {{ jsPDF }} = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text('Relatório Climático Local', 20, 20);
+    doc.setFontSize(12);
+    doc.text('- Centro: 24 relatos', 20, 40);
+    doc.text('- Jardim das Flores: 18 relatos', 20, 50);
+    doc.text('- Parque Sul: 12 relatos', 20, 60);
+    doc.save('relatorio-climatico.pdf');
+  }
+</script>
+
+</body>
+</html>
