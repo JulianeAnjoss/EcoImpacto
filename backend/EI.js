@@ -11,7 +11,7 @@ let graficoProblemasEstado = null;
 // ========== CONFIGURAÇÃO DO BANCO DE DADOS JSONBIN.IO ==========
 // SUBSTITUA estas variáveis com suas credenciais do JSONBin.io
 const JSONBIN_API_KEY = '$2a$10$eU6Mxfif5B/C4sTyAO/Ns.n8vC9QiLufRRe8cSrQ2ZpG9FbyE4B9a'; // MINHA X-Master-Key do JSONBin
-const JSONBIN_BIN_ID = '690b306ed0ea881f40d548f6'; // MEU Bin ID do JSONBin
+const JSONBIN_BIN_ID = '690b77d7ae596e708f46a389 '; // MEU Bin ID do JSONBin
 const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
 // ========== FUNÇÕES DO BANCO DE DADOS ==========
