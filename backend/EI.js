@@ -11,7 +11,7 @@ let graficoProblemasEstado = null;
 // ========== CONFIGURAÇÃO DO BANCO DE DADOS JSONBIN.IO ==========
 // SUBSTITUA estas variáveis com suas credenciais do JSONBin.io
 const JSONBIN_API_KEY = '$2a$10$eU6Mxfif5B/C4sTyAO/Ns.n8vC9QiLufRRe8cSrQ2ZpG9FbyE4B9a'; // MINHA X-Master-Key do JSONBin
-const JSONBIN_BIN_ID = '690b306ed0ea881f40d548f6 '; // MEU Bin ID do JSONBin
+const JSONBIN_BIN_ID = '690b306ed0ea881f40d548f6'; // MEU Bin ID do JSONBin
 const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
 // ========== FUNÇÕES DO BANCO DE DADOS ==========
@@ -83,6 +83,88 @@ async function salvarRelatosNoBanco(relatos) {
 }
 
 // ========== FUNÇÕES MODIFICADAS ==========
+
+// MODIFICADA: Função getUserLocation()
+function getUserLocation() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            // Fallback para São Paulo se geolocalização não for suportada
+            userLocation = { lat: -23.5505, lon: -46.6333 };
+            console.log('Geolocalização não suportada, usando São Paulo como fallback');
+            resolve();
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                userLocation = {
+                    lat: position.coords.latitude,
+                    lon: position.coords.longitude
+                };
+                console.log('Localização do usuário obtida:', userLocation);
+                await updateLocationDisplay();
+                resolve();
+            },
+            (error) => {
+                console.error('Erro na geolocalização:', error);
+                // Fallback para São Paulo
+                userLocation = { lat: -23.5505, lon: -46.6333 };
+                console.log('Usando localização fallback (São Paulo)');
+                updateLocationDisplay();
+                resolve();
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 600000
+            }
+        );
+    });
+}
+
+// MODIFICADA: Função initializeMap()
+function initializeMap() {
+    // VERIFICA se temos a localização do usuário
+    if (!userLocation) {
+        console.error('Localização do usuário não disponível para o mapa');
+        return;
+    }
+
+    // INICIALIZA o mapa na localização do usuário
+    mapa = L.map('map').setView([userLocation.lat, userLocation.lon], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(mapa);
+
+    // ADICIONA marcador na localização exata do usuário
+    L.marker([userLocation.lat, userLocation.lon])
+        .addTo(mapa)
+        .bindPopup(`
+            <div class="font-sans">
+                <h3 class="font-bold text-green-700">📍 Sua Localização Atual</h3>
+                <p><strong>Bairro:</strong> ${userBairro || 'Carregando...'}</p>
+                <p><strong>Cidade:</strong> ${userCidade || 'Carregando...'}</p>
+                <p><strong>Status:</strong> Monitoramento ativo</p>
+            </div>
+        `)
+        .openPopup();
+
+    // Carregar dados reais de alertas
+    loadRealAlertsData();
+    
+    console.log('Mapa inicializado na localização do usuário');
+}
+
+// MODIFICADA: Função centralizarNoUsuario()
+function centralizarNoUsuario() {
+    if (userLocation && mapa) {
+        mapa.setView([userLocation.lat, userLocation.lon], 13);
+        mostrarNotificacao('🗺️ Mapa centralizado na sua localização atual', 'success');
+    } else {
+        mostrarNotificacao('❌ Não foi possível detectar sua localização', 'error');
+    }
+}
 
 // Inicialização do sistema
 document.addEventListener('DOMContentLoaded', function() {
