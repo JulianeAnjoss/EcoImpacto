@@ -1,10 +1,105 @@
+// ========== VARIÁVEIS GLOBAIS ==========
+let mapa;
+let todosRelatos = [];
+let userLocation = null;
+let userBairro = null;
+let userCidade = null;
+const OPENWEATHER_API_KEY = 'f5388f8c9779d967c66b9a183cbc3eb4';
+let foodSecurityChart = null;
+let graficoProblemasEstado = null;
+
+// ========== CONFIGURAÇÃO DO BANCO DE DADOS JSONBIN.IO ==========
+// SUBSTITUA estas variáveis com suas credenciais do JSONBin.io
+const JSONBIN_API_KEY = '$2a$10$eU6Mxfif5B/C4sTyAO/Ns.n8vC9QiLufRRe8cSrQ2ZpG9FbyE4B9a'; // MINHA X-Master-Key do JSONBin
+const JSONBIN_BIN_ID = '690b306ed0ea881f40d548f6 '; // MEU Bin ID do JSONBin
+const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
+
+// ========== FUNÇÕES DO BANCO DE DADOS ==========
+
+// Carregar todos os relatos do banco de dados
+async function carregarRelatosDoBanco() {
+    try {
+        const response = await fetch(JSONBIN_URL + '/latest', {
+            method: 'GET',
+            headers: {
+                'X-Master-Key': JSONBIN_API_KEY,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Erro ao carregar relatos do banco de dados');
+        }
+
+        const data = await response.json();
+        
+        // Se não existirem relatos no banco, retorna array vazio
+        if (data.record && Array.isArray(data.record.relatos)) {
+            console.log('Relatos carregados do banco:', data.record.relatos.length);
+            return data.record.relatos;
+        } else {
+            return [];
+        }
+    } catch (error) {
+        console.error('Erro ao carregar relatos:', error);
+        // Fallback para localStorage se a API falhar
+        const relatosLocais = JSON.parse(localStorage.getItem('relatosEcoImpacto') || '[]');
+        console.log('Usando relatos locais:', relatosLocais.length);
+        return relatosLocais;
+    }
+}
+
+// Salvar relatos no banco de dados
+async function salvarRelatosNoBanco(relatos) {
+    try {
+        const response = await fetch(JSONBIN_URL, {
+            method: 'PUT',
+            headers: {
+                'X-Master-Key': JSONBIN_API_KEY,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                relatos: relatos,
+                ultimaAtualizacao: new Date().toISOString(),
+                totalRelatos: relatos.length,
+                projeto: "EcoImpacto"
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Erro ao salvar relatos no banco de dados');
+        }
+
+        const data = await response.json();
+        console.log('Relatos salvos com sucesso no banco de dados:', relatos.length);
+        return true;
+    } catch (error) {
+        console.error('Erro ao salvar relatos:', error);
+        // Fallback para localStorage
+        localStorage.setItem('relatosEcoImpacto', JSON.stringify(relatos));
+        console.log('Relatos salvos localmente:', relatos.length);
+        return false;
+    }
+}
+
+// ========== FUNÇÕES MODIFICADAS ==========
+
+// Inicialização do sistema
+document.addEventListener('DOMContentLoaded', function() {
+    initializeApp();
+});
+
 async function initializeApp() {
     try {
         await getUserLocation();
         await initializeMap();
+        
+        // NOVO: Carregar relatos do banco de dados
+        todosRelatos = await carregarRelatosDoBanco();
+        
         await loadAllData();
         
-        // NOVA LINHA: Inicializar dashboard estadual
+        // Inicializar dashboard estadual
         carregarDashboardEstadual();
         
         // Atualizar dados a cada 10 minutos
@@ -15,9 +110,34 @@ async function initializeApp() {
     }
 }
 
-// ========== DASHBOARD ESTADUAL ==========
+// MODIFICADA: Função para salvar relatos (usando banco de dados)
+async function salvarRelato(relato) {
+    try {
+        // Adicionar ao array local
+        todosRelatos.unshift(relato);
+        
+        // NOVO: Salvar no banco de dados
+        const sucesso = await salvarRelatosNoBanco(todosRelatos);
+        
+        if (sucesso) {
+            mostrarNotificacao('✅ Relato enviado com sucesso! Salvo no banco de dados.', 'success');
+        } else {
+            mostrarNotificacao('✅ Relato enviado! (Salvo localmente)', 'success');
+        }
+        
+        // Atualizar a interface
+        adicionarRelatoLista(relato);
+        atualizarMetricas();
+        atualizarRankings();
+        atualizarDashboardEstadual();
+        
+    } catch (error) {
+        console.error('Erro ao salvar relato:', error);
+        mostrarNotificacao('❌ Erro ao salvar relato. Tente novamente.', 'error');
+    }
+}
 
-let graficoProblemasEstado = null;
+// ========== DASHBOARD ESTADUAL ==========
 
 function carregarDashboardEstadual() {
     const estadoSelecionado = document.getElementById('selecionarEstado').value;
@@ -342,6 +462,19 @@ function atualizarDashboardEstadual() {
     }
 }
 
-// REMOVA a função salvarRelato duplicada - use a que já existe!
-// Apenas ADICIONE esta linha dentro da função salvarRelato existente:
-// atualizarDashboardEstadual();
+// ========== CONFIGURAÇÃO INICIAL DO BANCO ==========
+// Função para criar o banco inicial se não existir
+async function configurarBancoInicial() {
+    try {
+        const relatosExistentes = await carregarRelatosDoBanco();
+        if (relatosExistentes.length === 0) {
+            console.log('Configurando banco de dados inicial...');
+            await salvarRelatosNoBanco([]);
+        }
+    } catch (error) {
+        console.error('Erro na configuração inicial:', error);
+    }
+}
+
+// Executar configuração quando a página carregar
+configurarBancoInicial();
