@@ -367,109 +367,108 @@
     </section>
 
     <!-- Dashboard Estadual -->
-    <section id="dashboard-estadual" class="section-padding bg-gray-50">
-        <div class="max-w-7xl mx-auto px-4">
-            <h3 class="text-3xl font-bold text-gray-800 mb-2 text-center">Dashboard por Estado</h3>
-            <p class="text-gray-600 text-center mb-10">Análise em tempo real baseada nos relatos da comunidade e notícias recentes</p>
-            
-            <!-- Filtros e Seleção de Estado -->
-            <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-                <div class="flex flex-col md:flex-row justify-between items-center mb-6">
-                    <h4 class="text-xl font-bold flex items-center mb-4 md:mb-0">
-                        <i class="fas fa-map-marked-alt text-blue-600 mr-2"></i>
-                        Análise por Estado
-                    </h4>
-                    <div class="flex gap-4">
-                        <select id="selecionarEstado" class="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="carregarDashboardEstadual()">
-                            <option value="">Todos os Estados</option>
-                            <option value="AC">Acre</option>
-                            <option value="AL">Alagoas</option>
-                            <option value="AP">Amapá</option>
-                            <option value="AM">Amazonas</option>
-                            <option value="BA">Bahia</option>
-                            <option value="CE">Ceará</option>
-                            <option value="DF">Distrito Federal</option>
-                            <option value="ES">Espírito Santo</option>
-                            <option value="GO">Goiás</option>
-                            <option value="MA">Maranhão</option>
-                            <option value="MT">Mato Grosso</option>
-                            <option value="MS">Mato Grosso do Sul</option>
-                            <option value="MG">Minas Gerais</option>
-                            <option value="PA">Pará</option>
-                            <option value="PB">Paraíba</option>
-                            <option value="PR">Paraná</option>
-                            <option value="PE">Pernambuco</option>
-                            <option value="PI">Piauí</option>
-                            <option value="RJ">Rio de Janeiro</option>
-                            <option value="RN">Rio Grande do Norte</option>
-                            <option value="RS">Rio Grande do Sul</option>
-                            <option value="RO">Rondônia</option>
-                            <option value="RR">Roraima</option>
-                            <option value="SC">Santa Catarina</option>
-                            <option value="SP">São Paulo</option>
-                            <option value="SE">Sergipe</option>
-                            <option value="TO">Tocantins</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Cards de Visão Geral Estadual -->
-                <div id="visaoGeralEstadual" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <!-- Os cards serão preenchidos via JavaScript -->
-                </div>
-
-                <!-- Tabela de Cidades com Maiores Problemas -->
-                <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-                    <h4 class="text-xl font-bold mb-4 flex items-center">
-                        <i class="fas fa-list-ol text-purple-500 mr-2"></i>
-                        Cidades com Mais Relatos
-                    </h4>
-                    <div id="tabelaCidades" class="overflow-x-auto">
-                        <table class="min-w-full bg-white">
-                            <thead>
-                                <tr class="bg-gray-100">
-                                    <th class="py-3 px-4 text-left">Cidade</th>
-                                    <th class="py-3 px-4 text-left">Problema Principal</th>
-                                    <th class="py-3 px-4 text-left">Gravidade</th>
-                                    <th class="py-3 px-4 text-left">Relatos</th>
-                                    <th class="py-3 px-4 text-left">Último Relato</th>
-                                </tr>
-                            </thead>
-                            <tbody id="dadosTabelaCidades">
-                                <!-- Dados serão preenchidos via JavaScript -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Gráfico de Distribuição de Problemas -->
-                <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-                    <h4 class="text-xl font-bold mb-4 flex items-center">
-                        <i class="fas fa-chart-pie text-green-600 mr-2"></i>
-                        Distribuição de Problemas no Estado
-                    </h4>
-                    <div class="h-64">
-                        <canvas id="graficoProblemasEstado"></canvas>
-                    </div>
+<section id="dashboard-estadual" class="section-padding bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4">
+        <h3 class="text-3xl font-bold text-gray-800 mb-2 text-center">Dashboard por Estado</h3>
+        <p class="text-gray-600 text-center mb-10">Análise em tempo real baseada nos relatos da comunidade e notícias recentes</p>
+        
+        <!-- Filtros e Seleção de Estado -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+                <h4 class="text-xl font-bold flex items-center mb-4 md:mb-0">
+                    <i class="fas fa-map-marked-alt text-blue-600 mr-2"></i>
+                    Análise por Estado
+                </h4>
+                <div class="flex gap-4">
+                    <select id="selecionarEstado" class="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="filtrarPorEstado()">
+                        <option value="">Todos os Estados</option>
+                        <option value="AC">Acre</option>
+                        <option value="AL">Alagoas</option>
+                        <option value="AP">Amapá</option>
+                        <option value="AM">Amazonas</option>
+                        <option value="BA">Bahia</option>
+                        <option value="CE">Ceará</option>
+                        <option value="DF">Distrito Federal</option>
+                        <option value="ES">Espírito Santo</option>
+                        <option value="GO">Goiás</option>
+                        <option value="MA">Maranhão</option>
+                        <option value="MT">Mato Grosso</option>
+                        <option value="MS">Mato Grosso do Sul</option>
+                        <option value="MG">Minas Gerais</option>
+                        <option value="PA">Pará</option>
+                        <option value="PB">Paraíba</option>
+                        <option value="PR">Paraná</option>
+                        <option value="PE">Pernambuco</option>
+                        <option value="PI">Piauí</option>
+                        <option value="RJ">Rio de Janeiro</option>
+                        <option value="RN">Rio Grande do Norte</option>
+                        <option value="RS">Rio Grande do Sul</option>
+                        <option value="RO">Rondônia</option>
+                        <option value="RR">Roraima</option>
+                        <option value="SC">Santa Catarina</option>
+                        <option value="SP">São Paulo</option>
+                        <option value="SE">Sergipe</option>
+                        <option value="TO">Tocantins</option>
+                    </select>
                 </div>
             </div>
 
-            <!-- Notícias Relacionadas ao Estado -->
-            <div id="noticiasEstado" class="bg-white rounded-xl shadow-md p-6">
-                <h4 class="text-xl font-bold mb-6 flex items-center">
-                    <i class="fas fa-newspaper text-orange-500 mr-2"></i>
-                    Notícias Recentes da Região
+            <!-- Cards de Visão Geral Estadual -->
+            <div id="visaoGeralEstadual" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Os cards serão preenchidos via JavaScript -->
+            </div>
+
+            <!-- Tabela de Cidades com Maiores Problemas -->
+            <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+                <h4 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-list-ol text-purple-500 mr-2"></i>
+                    Cidades com Mais Relatos
                 </h4>
-                <div id="conteudoNoticiasEstado" class="space-y-4">
-                    <div class="text-center py-8 text-gray-500">
-                        <i class="fas fa-newspaper text-3xl mb-3"></i>
-                        <p>Selecione um estado para ver notícias relacionadas</p>
-                    </div>
+                <div id="tabelaCidades" class="overflow-x-auto">
+                    <table class="min-w-full bg-white">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="py-3 px-4 text-left">Cidade</th>
+                                <th class="py-3 px-4 text-left">Problema Principal</th>
+                                <th class="py-3 px-4 text-left">Gravidade</th>
+                                <th class="py-3 px-4 text-left">Relatos</th>
+                                <th class="py-3 px-4 text-left">Último Relato</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dadosTabelaCidades">
+                            <!-- Dados serão preenchidos via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Gráfico de Distribuição de Problemas -->
+            <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+                <h4 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-chart-pie text-green-600 mr-2"></i>
+                    Distribuição de Problemas no Estado
+                </h4>
+                <div class="h-64">
+                    <canvas id="graficoProblemasEstado"></canvas>
                 </div>
             </div>
         </div>
-    </section>
 
+        <!-- Notícias Relacionadas ao Estado -->
+        <div id="noticiasEstado" class="bg-white rounded-xl shadow-md p-6">
+            <h4 class="text-xl font-bold mb-6 flex items-center">
+                <i class="fas fa-newspaper text-orange-500 mr-2"></i>
+                Notícias Recentes da Região
+            </h4>
+            <div id="conteudoNoticiasEstado" class="space-y-4">
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-newspaper text-3xl mb-3"></i>
+                    <p>Selecione um estado para ver notícias relacionadas</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
     <!-- Dashboard Principal -->
     <section id="dados" class="section-padding bg-white">
         <div class="max-w-7xl mx-auto px-4">
@@ -603,115 +602,164 @@
     </section>
 
     <!-- Sistema de Relatos Comunitários -->
-    <section id="relatos" class="section-padding bg-gray-50">
-        <div class="max-w-4xl mx-auto px-4">
-            <h3 class="text-3xl font-bold text-gray-800 mb-6 text-center">Relatos Comunitários</h3>
-            
-            <div class="bg-green-50 rounded-xl p-6 mb-8">
-                <h4 class="text-xl font-semibold mb-4 flex items-center">
-                    <i class="fas fa-plus-circle text-green-600 mr-2"></i>
-                    Novo Relato da Comunidade
-                </h4>
-                <form id="formRelato" class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Problema</label>
-                            <select id="tipoProblema" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" required>
-                                <option value="">Selecione...</option>
-                                  <option value="seca">Altas temperaturas</option>
-                                <option value="seca">Seca/Estiagem</option>
-                                <option value="inundacao">Inundação/Alagamento</option>
-                                <option value="queimada">Queimada/Fogo</option>
-                                <option value="desmatamento">Desmatamento</option>
-                                <option value="inseguranca_alimentar">Falta de Alimentos</option>
-                                <option value="aumento_precos">Aumento de Preços</option>
-                                <option value="perda_safra">Perda de Safra</option>
-                                <option value="agua_contaminada">Água Contaminada</option>
-                                <option value="doencas">Surtos de Doenças</option>
-                                <option value="agricultura">Perda Agrícola</option>
-                                <option value="outro">Outro</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Gravidade</label>
-                            <select id="gravidade" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" required>
-                                <option value="">Selecione...</option>
-                                <option value="baixa">Baixa</option>
-                                <option value="media">Média</option>
-                                <option value="alta">Alta</option>
-                                <option value="critica">Crítica (Emergência)</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Bairro</label>
-                            <input type="text" id="bairroRelato" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" required placeholder="Seu bairro">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
-                            <input type="text" id="cidadeRelato" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                            <select id="estadoRelato" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" required>
-                                <option value="">Selecione...</option>
-                                <option value="AC">Acre</option>
-                                <option value="AL">Alagoas</option>
-                                <option value="AP">Amapá</option>
-                                <option value="AM">Amazonas</option>
-                                <option value="BA">Bahia</option>
-                                <option value="CE">Ceará</option>
-                                <option value="DF">Distrito Federal</option>
-                                <option value="ES">Espírito Santo</option>
-                                <option value="GO">Goiás</option>
-                                <option value="MA">Maranhão</option>
-                                <option value="MT">Mato Grosso</option>
-                                <option value="MS">Mato Grosso do Sul</option>
-                                <option value="MG">Minas Gerais</option>
-                                <option value="PA">Pará</option>
-                                <option value="PB">Paraíba</option>
-                                <option value="PR">Paraná</option>
-                                <option value="PE">Pernambuco</option>
-                                <option value="PI">Piauí</option>
-                                <option value="RJ">Rio de Janeiro</option>
-                                <option value="RN">Rio Grande do Norte</option>
-                                <option value="RS">Rio Grande do Sul</option>
-                                <option value="RO">Rondônia</option>
-                                <option value="RR">Roraima</option>
-                                <option value="SC">Santa Catarina</option>
-                                <option value="SP">São Paulo</option>
-                                <option value="SE">Sergipe</option>
-                                <option value="TO">Tocantins</option>
-                            </select>
-                        </div>
-                    </div>
-                    
+  <section id="relatos" class="section-padding bg-gray-50">
+    <div class="max-w-4xl mx-auto px-4">
+        <h3 class="text-3xl font-bold text-gray-800 mb-6 text-center">Relatos Comunitários</h3>
+        
+        <div class="bg-green-50 rounded-xl p-6 mb-8">
+            <h4 class="text-xl font-semibold mb-4 flex items-center">
+                <i class="fas fa-plus-circle text-green-600 mr-2"></i>
+                Novo Relato da Comunidade
+            </h4>
+            <form id="formRelato" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Descrição Detalhada</label>
-                        <textarea id="descricaoRelato" rows="3" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Descreva o problema em detalhes: como está afetando a saúde, alimentação ou segurança da comunidade..." required></textarea>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Problema</label>
+                        <select id="tipoProblema" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                            <option value="">Selecione...</option>
+                            <option value="seca">Altas temperaturas</option>
+                            <option value="seca">Seca/Estiagem</option>
+                            <option value="inundacao">Inundação/Alagamento</option>
+                            <option value="queimada">Queimada/Fogo</option>
+                            <option value="desmatamento">Desmatamento</option>
+                            <option value="inseguranca_alimentar">Falta de Alimentos</option>
+                            <option value="aumento_precos">Aumento de Preços</option>
+                            <option value="perda_safra">Perda de Safra</option>
+                            <option value="agua_contaminada">Água Contaminada</option>
+                            <option value="doencas">Surtos de Doenças</option>
+                            <option value="agricultura">Perda Agrícola</option>
+                            <option value="outro">Outro</option>
+                        </select>
                     </div>
-                    
-                    <button type="submit" class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition flex items-center justify-center">
-                        <i class="fas fa-paper-plane mr-2"></i> Enviar Relato para a Comunidade
-                    </button>
-                </form>
-            </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Gravidade</label>
+                        <select id="gravidade" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                            <option value="">Selecione...</option>
+                            <option value="baixa">Baixa</option>
+                            <option value="media">Média</option>
+                            <option value="alta">Alta</option>
+                            <option value="critica">Crítica (Emergência)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Bairro</label>
+                        <input type="text" id="bairroRelato" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" required placeholder="Seu bairro">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
+                        <input type="text" id="cidadeRelato" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                        <select id="estadoRelato" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                            <option value="">Selecione...</option>
+                            <option value="AC">Acre</option>
+                            <option value="AL">Alagoas</option>
+                            <option value="AP">Amapá</option>
+                            <option value="AM">Amazonas</option>
+                            <option value="BA">Bahia</option>
+                            <option value="CE">Ceará</option>
+                            <option value="DF">Distrito Federal</option>
+                            <option value="ES">Espírito Santo</option>
+                            <option value="GO">Goiás</option>
+                            <option value="MA">Maranhão</option>
+                            <option value="MT">Mato Grosso</option>
+                            <option value="MS">Mato Grosso do Sul</option>
+                            <option value="MG">Minas Gerais</option>
+                            <option value="PA">Pará</option>
+                            <option value="PB">Paraíba</option>
+                            <option value="PR">Paraná</option>
+                            <option value="PE">Pernambuco</option>
+                            <option value="PI">Piauí</option>
+                            <option value="RJ">Rio de Janeiro</option>
+                            <option value="RN">Rio Grande do Norte</option>
+                            <option value="RS">Rio Grande do Sul</option>
+                            <option value="RO">Rondônia</option>
+                            <option value="RR">Roraima</option>
+                            <option value="SC">Santa Catarina</option>
+                            <option value="SP">São Paulo</option>
+                            <option value="SE">Sergipe</option>
+                            <option value="TO">Tocantins</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Descrição Detalhada</label>
+                    <textarea id="descricaoRelato" rows="3" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Descreva o problema em detalhes: como está afetando a saúde, alimentação ou segurança da comunidade..." required></textarea>
+                </div>
+                
+                <button type="submit" class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition flex items-center justify-center">
+                    <i class="fas fa-paper-plane mr-2"></i> Enviar Relato para a Comunidade
+                </button>
+            </form>
+        </div>
 
-            <!-- Lista de Relatos Recentes -->
-            <div class="bg-white rounded-xl shadow-md p-6">
-                <h4 class="text-xl font-bold mb-4 flex items-center">
+        <!-- Lista de Relatos Recentes com Sistema de Paginação -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h4 class="text-xl font-bold flex items-center">
                     <i class="fas fa-list-alt text-blue-600 mr-2"></i>
                     Relatos Recentes da Comunidade
                 </h4>
-                <div id="listaRelatos" class="space-y-4">
-                    <!-- Relatos serão carregados aqui -->
+                <div class="flex gap-2">
+                    <select id="filtroEstadoRelatos" class="border rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="filtrarRelatos()">
+                        <option value="">Todos os estados</option>
+                        <option value="AC">Acre</option>
+                        <option value="AL">Alagoas</option>
+                        <option value="AP">Amapá</option>
+                        <option value="AM">Amazonas</option>
+                        <option value="BA">Bahia</option>
+                        <option value="CE">Ceará</option>
+                        <option value="DF">Distrito Federal</option>
+                        <option value="ES">Espírito Santo</option>
+                        <option value="GO">Goiás</option>
+                        <option value="MA">Maranhão</option>
+                        <option value="MT">Mato Grosso</option>
+                        <option value="MS">Mato Grosso do Sul</option>
+                        <option value="MG">Minas Gerais</option>
+                        <option value="PA">Pará</option>
+                        <option value="PB">Paraíba</option>
+                        <option value="PR">Paraná</option>
+                        <option value="PE">Pernambuco</option>
+                        <option value="PI">Piauí</option>
+                        <option value="RJ">Rio de Janeiro</option>
+                        <option value="RN">Rio Grande do Norte</option>
+                        <option value="RS">Rio Grande do Sul</option>
+                        <option value="RO">Rondônia</option>
+                        <option value="RR">Roraima</option>
+                        <option value="SC">Santa Catarina</option>
+                        <option value="SP">São Paulo</option>
+                        <option value="SE">Sergipe</option>
+                        <option value="TO">Tocantins</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="listaRelatos" class="space-y-4 mb-6">
+                <!-- Relatos serão carregados aqui -->
+            </div>
+            
+            <!-- Controles de Paginação -->
+            <div id="controlesPaginacao" class="flex justify-between items-center pt-4 border-t border-gray-200">
+                <div class="text-sm text-gray-600">
+                    Mostrando <span id="relatosMostrados">0</span> de <span id="totalRelatos">0</span> relatos
+                </div>
+                <div class="flex gap-2">
+                    <button id="btnVerMais" onclick="carregarMaisRelatos()" class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition flex items-center">
+                        <i class="fas fa-chevron-down mr-2"></i> Ver Mais 10
+                    </button>
+                    <button id="btnFecharTudo" onclick="fecharTodosRelatos()" class="bg-gray-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-600 transition flex items-center hidden">
+                        <i class="fas fa-times mr-2"></i> Fechar Tudo
+                    </button>
                 </div>
             </div>
         </div>
-    </section>
-
+    </div>
+</section>
     <!-- Ranking de Áreas Críticas -->
     <section id="ranking" class="section-padding bg-green-50">
         <div class="max-w-6xl mx-auto px-4">
