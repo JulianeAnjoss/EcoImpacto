@@ -1,4 +1,4 @@
-// Variáveis globais
+// ========== VARIÁVEIS GLOBAIS ==========
 let mapa;
 let todosRelatos = [];
 let userLocation = null;
@@ -8,7 +8,174 @@ const OPENWEATHER_API_KEY = 'f5388f8c9779d967c66b9a183cbc3eb4';
 let foodSecurityChart = null;
 let graficoProblemasEstado = null;
 
-// Inicialização do sistema
+// Variáveis para paginação
+let relatosVisiveis = 10;
+let estadoFiltroRelatos = '';
+let estadoSelecionadoDashboard = '';
+
+// ========== CONFIGURAÇÃO DO BANCO DE DADOS JSONBIN.IO ==========
+const JSONBIN_API_KEY = '$2a$10$eU6Mxfif5B/C4sTyAO/Ns.n8vC9QiLufRRe8cSrQ2ZpG9FbyE4B9a';
+const JSONBIN_BIN_ID = '690b306ed0ea881f40d548f6';
+const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
+
+// ========== FUNÇÕES DO BANCO DE DADOS ==========
+async function carregarRelatosDoBanco() {
+    try {
+        const response = await fetch(JSONBIN_URL + '/latest', {
+            method: 'GET',
+            headers: {
+                'X-Master-Key': JSONBIN_API_KEY,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Erro ao carregar relatos do banco de dados');
+        }
+
+        const data = await response.json();
+        
+        if (data.record && Array.isArray(data.record.relatos)) {
+            console.log('Relatos carregados do banco:', data.record.relatos.length);
+            return data.record.relatos;
+        } else {
+            return [];
+        }
+    } catch (error) {
+        console.error('Erro ao carregar relatos:', error);
+        const relatosLocais = JSON.parse(localStorage.getItem('relatosEcoImpacto') || '[]');
+        console.log('Usando relatos locais:', relatosLocais.length);
+        return relatosLocais;
+    }
+}
+
+async function salvarRelatosNoBanco(relatos) {
+    try {
+        const response = await fetch(JSONBIN_URL, {
+            method: 'PUT',
+            headers: {
+                'X-Master-Key': JSONBIN_API_KEY,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                relatos: relatos,
+                ultimaAtualizacao: new Date().toISOString(),
+                totalRelatos: relatos.length,
+                projeto: "EcoImpacto"
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Erro ao salvar relatos no banco de dados');
+        }
+
+        const data = await response.json();
+        console.log('Relatos salvos com sucesso no banco de dados:', relatos.length);
+        return true;
+    } catch (error) {
+        console.error('Erro ao salvar relatos:', error);
+        localStorage.setItem('relatosEcoImpacto', JSON.stringify(relatos));
+        console.log('Relatos salvos localmente:', relatos.length);
+        return false;
+    }
+}
+
+// ========== FUNÇÕES DE PAGINAÇÃO E FILTROS ==========
+function filtrarRelatos() {
+    estadoFiltroRelatos = document.getElementById('filtroEstadoRelatos').value;
+    relatosVisiveis = 10;
+    carregarRelatos();
+}
+
+function carregarMaisRelatos() {
+    relatosVisiveis += 10;
+    carregarRelatos();
+}
+
+function fecharTodosRelatos() {
+    relatosVisiveis = 10;
+    carregarRelatos();
+}
+
+function filtrarPorEstado() {
+    estadoSelecionadoDashboard = document.getElementById('selecionarEstado').value;
+    carregarDashboardEstadual();
+}
+
+// ========== FUNÇÕES MODIFICADAS ==========
+function getUserLocation() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            userLocation = { lat: -23.5505, lon: -46.6333 };
+            console.log('Geolocalização não suportada, usando São Paulo como fallback');
+            resolve();
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                userLocation = {
+                    lat: position.coords.latitude,
+                    lon: position.coords.longitude
+                };
+                console.log('Localização do usuário obtida:', userLocation);
+                await updateLocationDisplay();
+                resolve();
+            },
+            (error) => {
+                console.error('Erro na geolocalização:', error);
+                userLocation = { lat: -23.5505, lon: -46.6333 };
+                console.log('Usando localização fallback (São Paulo)');
+                updateLocationDisplay();
+                resolve();
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 600000
+            }
+        );
+    });
+}
+
+function initializeMap() {
+    if (!userLocation) {
+        console.error('Localização do usuário não disponível para o mapa');
+        return;
+    }
+
+    mapa = L.map('map').setView([userLocation.lat, userLocation.lon], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(mapa);
+
+    L.marker([userLocation.lat, userLocation.lon])
+        .addTo(mapa)
+        .bindPopup(`
+            <div class="font-sans">
+                <h3 class="font-bold text-green-700">📍 Sua Localização Atual</h3>
+                <p><strong>Bairro:</strong> ${userBairro || 'Carregando...'}</p>
+                <p><strong>Cidade:</strong> ${userCidade || 'Carregando...'}</p>
+                <p><strong>Status:</strong> Monitoramento ativo</p>
+            </div>
+        `)
+        .openPopup();
+
+    loadRealAlertsData();
+    console.log('Mapa inicializado na localização do usuário');
+}
+
+function centralizarNoUsuario() {
+    if (userLocation && mapa) {
+        mapa.setView([userLocation.lat, userLocation.lon], 13);
+        mostrarNotificacao('🗺️ Mapa centralizado na sua localização atual', 'success');
+    } else {
+        mostrarNotificacao('❌ Não foi possível detectar sua localização', 'error');
+    }
+}
+
+// ========== INICIALIZAÇÃO DO SISTEMA ==========
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
 });
@@ -17,12 +184,15 @@ async function initializeApp() {
     try {
         await getUserLocation();
         await initializeMap();
+        
+        todosRelatos = await carregarRelatosDoBanco();
+        
         await loadAllData();
         
-        // Inicializar dashboard estadual
+        carregarRelatos();
         carregarDashboardEstadual();
+        atualizarRankings();
         
-        // Atualizar dados a cada 10 minutos
         setInterval(loadAllData, 600000);
     } catch (error) {
         console.error('Error initializing app:', error);
@@ -30,210 +200,77 @@ async function initializeApp() {
     }
 }
 
-// ========== FUNÇÃO PRINCIPAL PARA ATUALIZAR AMBOS OS DASHBOARDS ==========
-function updateDashboardComparativo(weatherData) {
-    if (!weatherData) return;
+// ========== SISTEMA DE RELATOS COM PAGINAÇÃO ==========
+function carregarRelatos() {
+    let relatosFiltrados = todosRelatos;
     
-    const temp = Math.round(weatherData.main.temp);
-    const humidity = weatherData.main.humidity;
-    const weatherCondition = weatherData.weather[0].main.toLowerCase();
+    if (estadoFiltroRelatos) {
+        relatosFiltrados = todosRelatos.filter(relato => relato.estado === estadoFiltroRelatos);
+    }
     
-    // DADOS REAIS DO CLIMA (para ambos os dashboards)
-    document.getElementById('tempAtual').textContent = `${temp}°C`;
-    document.getElementById('umidadeAtual').textContent = `${humidity}%`;
-    document.getElementById('tempOriginal').textContent = `${temp}°C`;
-    document.getElementById('umidadeOriginal').textContent = `${humidity}%`;
+    const container = document.getElementById('listaRelatos');
+    const controles = document.getElementById('controlesPaginacao');
+    const btnVerMais = document.getElementById('btnVerMais');
+    const btnFecharTudo = document.getElementById('btnFecharTudo');
     
-    // Status da temperatura
-    let tempStatus, tempColor;
-    if (temp > 30) {
-        tempStatus = 'Acima do normal';
-        tempColor = 'text-red-500';
-    } else if (temp < 15) {
-        tempStatus = 'Abaixo do normal';
-        tempColor = 'text-blue-500';
+    if (relatosFiltrados.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-inbox text-4xl mb-4"></i>
+                <p>Nenhum relato encontrado${estadoFiltroRelatos ? ` para ${getNomeEstado(estadoFiltroRelatos)}` : ''}.</p>
+                <p class="text-sm mt-2">Seja o primeiro a contribuir!</p>
+            </div>
+        `;
+        controles.classList.add('hidden');
+        return;
+    }
+    
+    const relatosParaMostrar = relatosFiltrados.slice(0, relatosVisiveis);
+    
+    container.innerHTML = relatosParaMostrar.map(relato => `
+        <div class="border-l-4 ${getCorBorda(relato.gravidade)} bg-gray-50 p-4 rounded-r-lg ranking-item">
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <span class="font-semibold">${relato.bairro}, ${relato.cidade} - ${relato.estado}</span>
+                    <span class="text-sm text-gray-500 ml-2">${relato.data}</span>
+                </div>
+                <span class="text-xs font-semibold px-2 py-1 rounded-full ${getCorGravidade(relato.gravidade)}">
+                    ${relato.gravidade.toUpperCase()}
+                </span>
+            </div>
+            <p class="text-gray-700 text-sm">${relato.descricao}</p>
+            <div class="flex justify-between items-center mt-3">
+                <span class="text-xs text-gray-500">${getTipoTexto(relato.tipo)}</span>
+                <button onclick="verDetalhesRelato(${relato.id})" class="text-green-600 text-xs font-semibold flex items-center">
+                    <i class="fas fa-search mr-1"></i> Ver Impacto
+                </button>
+            </div>
+        </div>
+    `).join('');
+    
+    document.getElementById('relatosMostrados').textContent = Math.min(relatosVisiveis, relatosFiltrados.length);
+    document.getElementById('totalRelatos').textContent = relatosFiltrados.length;
+    
+    if (relatosVisiveis < relatosFiltrados.length) {
+        btnVerMais.classList.remove('hidden');
+        btnFecharTudo.classList.remove('hidden');
     } else {
-        tempStatus = 'Normal para a época';
-        tempColor = 'text-green-500';
+        btnVerMais.classList.add('hidden');
+        if (relatosVisiveis > 10) {
+            btnFecharTudo.classList.remove('hidden');
+        } else {
+            btnFecharTudo.classList.add('hidden');
+        }
     }
     
-    document.getElementById('tempStatus').textContent = tempStatus;
-    document.getElementById('tempStatus').className = `text-xs ${tempColor}`;
-    
-    // Status da umidade
-    let humidityStatus, humidityColor;
-    if (humidity < 30) {
-        humidityStatus = 'Muito baixa';
-        humidityColor = 'text-orange-500';
-    } else if (humidity > 80) {
-        humidityStatus = 'Muito alta';
-        humidityColor = 'text-blue-500';
-    } else {
-        humidityStatus = 'Ideal';
-        humidityColor = 'text-green-500';
-    }
-    
-    document.getElementById('umidadeStatus').textContent = humidityStatus;
-    document.getElementById('umidadeStatus').className = `text-xs ${humidityColor}`;
-    
-    // ANÁLISE DE IMPACTO NA PRODUÇÃO (baseada em dados reais)
-    let alertaProducao, producaoStatus, producaoColor;
-    
-    if (temp > 35 || humidity < 25) {
-        alertaProducao = '🚨 Condições extremas - alto risco para cultivos';
-        producaoStatus = 'Crítico';
-        producaoColor = 'bg-red-100 text-red-800';
-    } else if (temp > 32 || humidity < 30 || humidity > 85) {
-        alertaProducao = '⚠️ Condições adversas - monitoramento necessário';
-        producaoStatus = 'Alerta';
-        producaoColor = 'bg-orange-100 text-orange-800';
-    } else {
-        alertaProducao = '✅ Condições favoráveis para produção agrícola';
-        producaoStatus = 'Normal';
-        producaoColor = 'bg-green-100 text-green-800';
-    }
-    
-    document.getElementById('alertaProducaoTempoReal').textContent = alertaProducao;
-    document.getElementById('alertaProducaoOriginal').textContent = alertaProducao;
-    document.getElementById('statusProducao').textContent = producaoStatus;
-    document.getElementById('statusProducao').className = `text-sm ${producaoColor} px-2 py-1 rounded`;
-    
-    // CÁLCULO DE PREÇOS BASEADO EM DADOS REAIS
-    const precoBaseArroz = 5.90; // Preço base real
-    const precoBaseFeijao = 8.50; // Preço base real
-    
-    // Fatores de ajuste baseados em condições climáticas reais
-    let fatorAjuste = 1.0;
-    let variacaoPercentual = 0;
-    
-    if (temp > 35 || humidity < 25) {
-        fatorAjuste = 1.18; // +18% em condições extremas
-        variacaoPercentual = 18;
-    } else if (temp > 32 || humidity < 30) {
-        fatorAjuste = 1.12; // +12% em condições adversas
-        variacaoPercentual = 12;
-    } else if (humidity > 85) {
-        fatorAjuste = 1.08; // +8% em alta umidade
-        variacaoPercentual = 8;
-    } else if (temp < 12) {
-        fatorAjuste = 1.05; // +5% em frio intenso
-        variacaoPercentual = 5;
-    }
-    
-    const precoArroz = (precoBaseArroz * fatorAjuste).toFixed(2);
-    const precoFeijao = (precoBaseFeijao * fatorAjuste).toFixed(2);
-    
-    // Atualizar preços em ambos os dashboards
-    document.getElementById('precoArrozTempoReal').textContent = `R$ ${precoArroz}`;
-    document.getElementById('precoFeijaoTempoReal').textContent = `R$ ${precoFeijao}`;
-    document.getElementById('precoArrozOriginal').textContent = `R$ ${precoArroz}`;
-    document.getElementById('precoFeijaoOriginal').textContent = `R$ ${precoFeijao}`;
-    
-    // Status dos preços
-    let statusPrecos, precosColor;
-    if (fatorAjuste > 1.1) {
-        statusPrecos = 'Alta Significativa';
-        precosColor = 'bg-red-100 text-red-800';
-    } else if (fatorAjuste > 1.05) {
-        statusPrecos = 'Em Alta';
-        precosColor = 'bg-orange-100 text-orange-800';
-    } else if (fatorAjuste > 1.0) {
-        statusPrecos = 'Leve Alta';
-        precosColor = 'bg-yellow-100 text-yellow-800';
-    } else {
-        statusPrecos = 'Estável';
-        precosColor = 'bg-green-100 text-green-800';
-    }
-    
-    document.getElementById('statusPrecos').textContent = statusPrecos;
-    document.getElementById('statusPrecos').className = `text-sm ${precosColor} px-2 py-1 rounded`;
-    
-    // Status individual dos produtos
-    const statusProduto = variacaoPercentual > 0 ? `+${variacaoPercentual}%` : 'Estável';
-    const corStatusProduto = variacaoPercentual > 0 ? 'text-red-500' : 'text-green-500';
-    
-    document.getElementById('statusArroz').textContent = statusProduto;
-    document.getElementById('statusArroz').className = `text-xs ${corStatusProduto}`;
-    document.getElementById('statusFeijao').textContent = statusProduto;
-    document.getElementById('statusFeijao').className = `text-xs ${corStatusProduto}`;
-    
-    // IMPACTO NA MESA (Segurança Alimentar)
-    let impactoMesa, statusMesa, mesaColor;
-    
-    if (parseFloat(precoArroz) > 7.5 || parseFloat(precoFeijao) > 10.5) {
-        impactoMesa = '⚠️ Preços elevados podem comprometer acesso a alimentos básicos';
-        statusMesa = 'Preocupante';
-        mesaColor = 'bg-orange-100 text-orange-800';
-    } else if (temp > 35 || humidity < 25) {
-        impactoMesa = '🌡️ Condições extremas exigem atenção à conservação de alimentos';
-        statusMesa = 'Atenção';
-        mesaColor = 'bg-yellow-100 text-yellow-800';
-    } else {
-        impactoMesa = '✅ Condições favoráveis para segurança alimentar local';
-        statusMesa = 'Estável';
-        mesaColor = 'bg-green-100 text-green-800';
-    }
-    
-    document.getElementById('impactoMesa').textContent = impactoMesa;
-    document.getElementById('statusMesa').textContent = statusMesa;
-    document.getElementById('statusMesa').className = `text-sm ${mesaColor} px-2 py-1 rounded`;
-    document.getElementById('statusSegurancaAlimentar').textContent = impactoMesa;
-    
-    // CONEXÃO CLIMA-ALIMENTAÇÃO
-    let conexao = '';
-    if (temp > 32 || humidity < 30) {
-        conexao = `🌡️ Temperatura de ${temp}°C e umidade de ${humidity}% podem pressionar os preços dos alimentos em ${variacaoPercentual}% nas próximas semanas`;
-    } else if (humidity > 85) {
-        conexao = '🌧️ Alta umidade pode afetar logística e disponibilidade de produtos frescos';
-    } else {
-        conexao = '✅ Condições climáticas estáveis - tendência de preços sob controle';
-    }
-    
-    document.getElementById('conexaoClimaAlimentacao').innerHTML = `<i class="fas fa-sync-alt mr-2"></i> ${conexao}`;
-    
-    // Status do clima
-    document.getElementById('statusClima').textContent = weatherData.weather[0].description;
+    controles.classList.remove('hidden');
 }
 
-// Modificar a função updateClimateData para usar o dashboard comparativo
-function updateClimateData(data) {
-    const temp = Math.round(data.main.temp);
-    const humidity = data.main.humidity;
-    
-    let risco, seguranca, saude, alerta;
-    
-    if (temp > 35 || humidity < 20) {
-        risco = 'ALTO';
-        seguranca = 'CRÍTICA';
-        saude = 'ALTO';
-        alerta = '🚨 ALERTA: Temperaturas extremas e baixa umidade - Risco para saúde e produção de alimentos';
-    } else if (temp > 30 || humidity > 85) {
-        risco = 'MÉDIO';
-        seguranca = 'ALERTA';
-        saude = 'MODERADO';
-        alerta = '⚠️ ATENÇÃO: Condições climáticas podem afetar segurança alimentar e saúde pública';
-    } else {
-        risco = 'BAIXO';
-        seguranca = 'ESTÁVEL';
-        saude = 'BAIXO';
-        alerta = '✅ Condições climáticas estáveis na região';
-    }
-    
-    document.getElementById('riscoAtual').textContent = risco;
-    document.getElementById('segurancaAlimentar').textContent = seguranca;
-    document.getElementById('saudePublica').textContent = saude;
-    document.getElementById('impactoAlimentar').textContent = `Temp: ${temp}°C, Umidade: ${humidity}%`;
-    document.getElementById('impactoSaude').textContent = `Condições: ${data.weather[0].description}`;
-    document.getElementById('alertaDestaque').textContent = alerta;
-    
-    // ATUALIZAÇÃO: Chamar a função do dashboard comparativo
-    updateDashboardComparativo(data);
-}
-
-// ========== DASHBOARD ESTADUAL ==========
-
+// ========== DASHBOARD ESTADUAL ATUALIZADO ==========
 function carregarDashboardEstadual() {
     const estadoSelecionado = document.getElementById('selecionarEstado').value;
+    estadoSelecionadoDashboard = estadoSelecionado;
+    
     atualizarVisaoGeralEstadual(estadoSelecionado);
     atualizarTabelaCidades(estadoSelecionado);
     atualizarGraficoProblemas(estadoSelecionado);
@@ -262,7 +299,6 @@ function atualizarVisaoGeralEstadual(estado) {
     const relatosCriticos = relatosEstado.filter(r => r.gravidade === 'critica').length;
     const problemasUnicos = [...new Set(relatosEstado.map(r => r.tipo))].length;
 
-    // Análise de tendência
     const relatosOntem = relatosEstado.filter(relato => {
         const dataRelato = new Date(relato.id);
         const ontem = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -334,7 +370,6 @@ function atualizarTabelaCidades(estado) {
 
     const relatosEstado = todosRelatos.filter(relato => relato.estado === estado);
     
-    // Agrupar por cidade
     const cidadesMap = {};
     relatosEstado.forEach(relato => {
         if (!cidadesMap[relato.cidade]) {
@@ -345,21 +380,19 @@ function atualizarTabelaCidades(estado) {
         }
         cidadesMap[relato.cidade].relatos.push(relato);
         
-        // Contar problemas por tipo
         if (!cidadesMap[relato.cidade].problemas[relato.tipo]) {
             cidadesMap[relato.cidade].problemas[relato.tipo] = 0;
         }
         cidadesMap[relato.cidade].problemas[relato.tipo]++;
     });
 
-    // Ordenar cidades por número de relatos
     const cidadesOrdenadas = Object.entries(cidadesMap)
         .map(([cidade, dados]) => ({
             cidade,
             totalRelatos: dados.relatos.length,
             problemaPrincipal: Object.entries(dados.problemas)
-                .sort(([,a], [,b]) => b - a)[0],
-            ultimoRelato: Math.max(...dados.relatos.map(r => r.id)),
+                .sort(([,a], [,b]) => b - a)[0] || ['', 0],
+            ultimoRelato: dados.relatos.length > 0 ? Math.max(...dados.relatos.map(r => r.id)) : 0,
             gravidade: dados.relatos.some(r => r.gravidade === 'critica') ? 'Crítica' : 
                       dados.relatos.some(r => r.gravidade === 'alta') ? 'Alta' : 'Média'
         }))
@@ -370,7 +403,7 @@ function atualizarTabelaCidades(estado) {
         container.innerHTML = `
             <tr>
                 <td colspan="5" class="py-4 text-center text-gray-500">
-                    Nenhum relato encontrado para este estado
+                    Nenhum relato encontrado para ${getNomeEstado(estado)}
                 </td>
             </tr>
         `;
@@ -387,7 +420,7 @@ function atualizarTabelaCidades(estado) {
                 </span>
             </td>
             <td class="py-3 px-4">${cidade.totalRelatos}</td>
-            <td class="py-3 px-4 text-sm text-gray-500">${new Date(cidade.ultimoRelato).toLocaleDateString('pt-BR')}</td>
+            <td class="py-3 px-4 text-sm text-gray-500">${cidade.ultimoRelato ? new Date(cidade.ultimoRelato).toLocaleDateString('pt-BR') : 'N/A'}</td>
         </tr>
     `).join('');
 }
@@ -404,7 +437,6 @@ function atualizarGraficoProblemas(estado) {
 
     const relatosEstado = todosRelatos.filter(relato => relato.estado === estado);
     
-    // Agrupar problemas por tipo
     const problemasMap = {};
     relatosEstado.forEach(relato => {
         if (!problemasMap[relato.tipo]) {
@@ -417,7 +449,6 @@ function atualizarGraficoProblemas(estado) {
         .sort(([,a], [,b]) => b - a)
         .slice(0, 8);
 
-    // Destruir gráfico anterior se existir
     if (graficoProblemasEstado) {
         graficoProblemasEstado.destroy();
     }
@@ -458,80 +489,379 @@ function atualizarGraficoProblemas(estado) {
     });
 }
 
-async function carregarNoticiasEstado(estado) {
-    const container = document.getElementById('conteudoNoticiasEstado');
-    
-    if (!estado) {
-        container.innerHTML = `
-            <div class="text-center py-8 text-gray-500">
-                <i class="fas fa-newspaper text-3xl mb-3"></i>
-                <p>Selecione um estado para ver notícias relacionadas</p>
-            </div>
-        `;
-        return;
-    }
-
-    const nomeEstado = getNomeEstado(estado);
-    
+// ========== FUNÇÕES EXISTENTES (mantidas para compatibilidade) ==========
+async function updateLocationDisplay() {
     try {
-        // Buscar notícias relacionadas ao estado
-        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`https://news.google.com/rss/search?q=${encodeURIComponent(nomeEstado + ' clima segurança alimentar')}&hl=pt-BR&gl=BR&ceid=BR:pt-419`)}`);
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLocation.lat}&lon=${userLocation.lon}`
+        );
         const data = await response.json();
-        const text = data.contents;
         
-        const parser = new DOMParser();
-        const xml = parser.parseFromString(text, 'text/xml');
-        const items = xml.querySelectorAll('item');
-        
-        const noticias = Array.from(items).slice(0, 5).map(item => {
-            const title = item.querySelector('title').textContent;
-            const link = item.querySelector('link').textContent;
-            const pubDate = new Date(item.querySelector('pubDate').textContent);
-            const source = item.querySelector('source') ? item.querySelector('source').textContent : 'Google News';
+        if (data.address) {
+            userBairro = data.address.suburb || data.address.neighbourhood || data.address.quarter || "Bairro Desconhecido";
+            userCidade = data.address.city || data.address.town || data.address.municipality || "Cidade Desconhecida";
             
-            return {
-                title,
-                link,
-                source,
-                date: pubDate.toLocaleDateString('pt-BR'),
-                time: pubDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-            };
-        });
-
-        if (noticias.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-8 text-gray-500">
-                    <i class="fas fa-newspaper text-3xl mb-3"></i>
-                    <p>Nenhuma notícia recente encontrada para ${nomeEstado}</p>
-                </div>
-            `;
-            return;
+            document.getElementById('localAtual').textContent = `${userBairro}, ${userCidade}`;
+            document.getElementById('comunidadeAtiva').textContent = `${userBairro}`;
         }
-
-        container.innerHTML = noticias.map(noticia => `
-            <div class="border-l-4 border-orange-500 bg-gray-50 p-4 rounded-r-lg hover:bg-orange-50 transition cursor-pointer" 
-                 onclick="window.open('${noticia.link}', '_blank')">
-                <div class="flex justify-between items-start mb-2">
-                    <h3 class="font-bold text-gray-800 flex-1">${noticia.title}</h3>
-                    <span class="text-xs text-gray-500 bg-white px-2 py-1 rounded ml-2">${noticia.source}</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-xs text-gray-500">${noticia.date} às ${noticia.time}</span>
-                    <span class="text-orange-600 text-xs font-semibold">Ler notícia →</span>
-                </div>
-            </div>
-        `).join('');
-
     } catch (error) {
-        console.error('Erro ao carregar notícias do estado:', error);
-        container.innerHTML = `
-            <div class="text-center py-8 text-gray-500">
-                <i class="fas fa-exclamation-triangle text-3xl mb-3"></i>
-                <p>Erro ao carregar notícias para ${nomeEstado}</p>
-                <p class="text-sm mt-2">Tente novamente mais tarde</p>
-            </div>
-        `;
+        document.getElementById('localAtual').textContent = 'Localização detectada';
     }
+}
+
+async function loadAllData() {
+    try {
+        await loadClimateData();
+        await loadFoodSecurityData();
+        await loadFoodSecurityNews();
+        await loadHealthImpacts();
+        await loadPreventionActions();
+        await loadOfficialNews();
+        atualizarRankings();
+        gerarDiagnosticoImpacto();
+    } catch (error) {
+        console.error('Error loading data:', error);
+        showError('Erro ao carregar dados. Tentando novamente...');
+    }
+}
+
+async function loadClimateData() {
+    try {
+        const response = await fetch(
+            `https://api.openweathermap.org/data/2.5/weather?lat=${userLocation.lat}&lon=${userLocation.lon}&appid=${OPENWEATHER_API_KEY}&units=metric&lang=pt_br`
+        );
+        const data = await response.json();
+
+        if (data.cod === 200) {
+            updateClimateData(data);
+            updateClimateAlerts(data);
+        }
+    } catch (error) {
+        document.getElementById('climate-data').innerHTML = 
+            '<div class="text-red-500">Erro ao carregar dados climáticos</div>';
+    }
+}
+
+function updateClimateData(data) {
+    const temp = Math.round(data.main.temp);
+    const humidity = data.main.humidity;
+    
+    let risco, seguranca, saude, alerta;
+    
+    if (temp > 35 || humidity < 20) {
+        risco = 'ALTO';
+        seguranca = 'CRÍTICA';
+        saude = 'ALTO';
+        alerta = '🚨 ALERTA: Temperaturas extremas e baixa umidade - Risco para saúde e produção de alimentos';
+    } else if (temp > 30 || humidity > 85) {
+        risco = 'MÉDIO';
+        seguranca = 'ALERTA';
+        saude = 'MODERADO';
+        alerta = '⚠️ ATENÇÃO: Condições climáticas podem afetar segurança alimentar e saúde pública';
+    } else {
+        risco = 'BAIXO';
+        seguranca = 'ESTÁVEL';
+        saude = 'BAIXO';
+        alerta = '✅ Condições climáticas estáveis na região';
+    }
+    
+    document.getElementById('riscoAtual').textContent = risco;
+    document.getElementById('segurancaAlimentar').textContent = seguranca;
+    document.getElementById('saudePublica').textContent = saude;
+    document.getElementById('impactoAlimentar').textContent = `Temp: ${temp}°C, Umidade: ${humidity}%`;
+    document.getElementById('impactoSaude').textContent = `Condições: ${data.weather[0].description}`;
+    document.getElementById('alertaDestaque').textContent = alerta;
+    
+    updateDashboardDuplo(data);
+}
+
+function updateClimateAlerts(weatherData) {
+    const temp = weatherData.main.temp;
+    const humidity = weatherData.main.humidity;
+    const alerts = [];
+
+    if (temp > 35) {
+        alerts.push('Temperatura extrema: risco de desidratação e estresse térmico');
+    }
+    if (temp < 5) {
+        alerts.push('Temperatura muito baixa: risco de hipotermia');
+    }
+    if (humidity < 30) {
+        alerts.push('Umidade muito baixa: risco de problemas respiratórios');
+    }
+    if (humidity > 85) {
+        alerts.push('Umidade muito alta: risco de proliferação de fungos e bactérias');
+    }
+
+    if (alerts.length > 0) {
+        document.getElementById('alertaDestaque').textContent = alerts.join(' | ');
+        document.getElementById('alertas').className = 'bg-red-50 py-4 border-b-4 border-red-500 pulse-alert';
+    }
+}
+
+function loadRealAlertsData() {
+    const alertas = [
+        { lat: userLocation.lat + 0.01, lon: userLocation.lon + 0.01, tipo: 'Alagamento', risco: 'Alto', bairro: 'Centro' },
+        { lat: userLocation.lat - 0.02, lon: userLocation.lon - 0.01, tipo: 'Seca', risco: 'Médio', bairro: 'Vila Nova' },
+        { lat: userLocation.lat + 0.015, lon: userLocation.lon - 0.02, tipo: 'Queimada', risco: 'Crítico', bairro: 'Jardim Paulista' }
+    ];
+
+    alertas.forEach(alerta => {
+        const cor = alerta.risco === 'Crítico' ? 'red' : alerta.risco === 'Alto' ? 'orange' : 'yellow';
+        const raio = alerta.risco === 'Crítico' ? 1000 : alerta.risco === 'Alto' ? 800 : 600;
+        
+        L.circle([alerta.lat, alerta.lon], {
+            color: cor,
+            fillColor: cor,
+            fillOpacity: 0.4,
+            radius: raio
+        }).addTo(mapa).bindPopup(`
+            <div class="font-sans">
+                <h3 class="font-bold" style="color: ${cor}">${alerta.bairro}</h3>
+                <p><strong>Alerta:</strong> ${alerta.tipo}</p>
+                <p><strong>Risco:</strong> ${alerta.risco}</p>
+                <p><strong>Fonte:</strong> INMET</p>
+                <p><strong>Atualizado:</strong> ${new Date().toLocaleTimeString('pt-BR')}</p>
+            </div>
+        `);
+    });
+}
+
+function updateDashboardDuplo(weatherData) {
+    document.getElementById('tempAtual').textContent = `${Math.round(weatherData.main.temp)}°C`;
+    document.getElementById('umidadeAtual').textContent = `${weatherData.main.humidity}%`;
+    
+    const temp = weatherData.main.temp;
+    if (temp > 30) {
+        document.getElementById('tempStatus').textContent = 'Acima do normal';
+        document.getElementById('tempStatus').className = 'text-xs text-red-500';
+    } else if (temp < 15) {
+        document.getElementById('tempStatus').textContent = 'Abaixo do normal';
+        document.getElementById('tempStatus').className = 'text-xs text-blue-500';
+    } else {
+        document.getElementById('tempStatus').textContent = 'Normal para a época';
+        document.getElementById('tempStatus').className = 'text-xs text-green-500';
+    }
+    
+    const humidity = weatherData.main.humidity;
+    if (humidity < 30) {
+        document.getElementById('umidadeStatus').textContent = 'Muito baixa';
+        document.getElementById('umidadeStatus').className = 'text-xs text-orange-500';
+    } else if (humidity > 80) {
+        document.getElementById('umidadeStatus').textContent = 'Muito alta';
+        document.getElementById('umidadeStatus').className = 'text-xs text-blue-500';
+    } else {
+        document.getElementById('umidadeStatus').textContent = 'Ideal';
+        document.getElementById('umidadeStatus').className = 'text-xs text-green-500';
+    }
+    
+    let alertaProducao = '';
+    
+    if (temp > 35) {
+        alertaProducao = 'Calor extremo - risco para hortifrúti e grãos';
+    } else if (temp < 10) {
+        alertaProducao = 'Frio intenso - pode afetar cultivos sensíveis';
+    } else if (humidity < 30) {
+        alertaProducao = 'Umidade baixa - estresse hídrico nas plantações';
+    } else if (humidity > 85) {
+        alertaProducao = 'Umidade alta - risco de doenças fúngicas';
+    } else {
+        alertaProducao = 'Condições favoráveis para a produção agrícola';
+    }
+    
+    document.getElementById('alertaProducao').textContent = alertaProducao;
+    
+    const precoBaseArroz = 5.90;
+    const precoBaseFeijao = 8.50;
+    
+    let fatorAjuste = 1.0;
+    if (temp > 32 || humidity < 35) {
+        fatorAjuste = 1.15;
+    } else if (temp < 12 || humidity > 85) {
+        fatorAjuste = 1.08;
+    }
+    
+    const precoArroz = (precoBaseArroz * fatorAjuste).toFixed(2);
+    const precoFeijao = (precoBaseFeijao * fatorAjuste).toFixed(2);
+    
+    document.getElementById('precoArroz').textContent = `R$ ${precoArroz}`;
+    document.getElementById('precoFeijao').textContent = `R$ ${precoFeijao}`;
+    
+    const variacao = ((fatorAjuste - 1) * 100).toFixed(0);
+    if (fatorAjuste > 1) {
+        document.getElementById('statusArroz').textContent = `+${variacao}% este mês`;
+        document.getElementById('statusArroz').className = 'text-xs text-red-500';
+        document.getElementById('statusFeijao').textContent = `+${variacao}% este mês`;
+        document.getElementById('statusFeijao').className = 'text-xs text-red-500';
+    } else {
+        document.getElementById('statusArroz').textContent = 'Estável';
+        document.getElementById('statusArroz').className = 'text-xs text-green-500';
+        document.getElementById('statusFeijao').textContent = 'Estável';
+        document.getElementById('statusFeijao').className = 'text-xs text-green-500';
+    }
+    
+    let conexao = '';
+    if (temp > 32 || humidity < 40) {
+        conexao = '🌡️ Condições climáticas atuais podem pressionar os preços dos alimentos nas próximas semanas';
+    } else if (temp < 12 || humidity > 80) {
+        conexao = '🌧️ Condições atuais podem afetar logística e disponibilidade de produtos frescos';
+    } else {
+        conexao = '✅ Condições climáticas estáveis - tendência de preços sob controle';
+    }
+    
+    document.getElementById('conexaoClimaAlimentacao').innerHTML = `<i class="fas fa-sync-alt mr-2"></i> ${conexao}`;
+    
+    let statusGeral = '';
+    if (parseFloat(precoArroz) > 7.0 || parseFloat(precoFeijao) > 10.0) {
+        statusGeral = '⚠️ Preços elevados podem comprometer o acesso a alimentos básicos';
+    } else if (temp > 35 || humidity < 25) {
+        statusGeral = '🌡️ Condições extremas exigem atenção à conservação de alimentos';
+    } else {
+        statusGeral = '✅ Condições favoráveis para segurança alimentar local';
+    }
+    
+    document.getElementById('statusSegurancaAlimentar').textContent = statusGeral;
+}
+
+// ========== SISTEMA DE RELATOS COMUNITÁRIOS ==========
+document.getElementById('formRelato').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const relato = {
+        id: Date.now(),
+        tipo: document.getElementById('tipoProblema').value,
+        gravidade: document.getElementById('gravidade').value,
+        bairro: document.getElementById('bairroRelato').value,
+        cidade: document.getElementById('cidadeRelato').value,
+        estado: document.getElementById('estadoRelato').value,
+        descricao: document.getElementById('descricaoRelato').value,
+        data: new Date().toLocaleString('pt-BR'),
+        coordenadas: obterCoordenadasProximas(userLocation),
+        status: 'ativo'
+    };
+    
+    salvarRelato(relato);
+    adicionarRelatoLista(relato);
+    atualizarMetricas();
+    atualizarRankings();
+    atualizarDashboardEstadual();
+    this.reset();
+    
+    mostrarNotificacao('✅ Relato enviado com sucesso! Sua contribuição ajuda toda a comunidade.', 'success');
+});
+
+function obterCoordenadasProximas(base) {
+    return {
+        lat: base.lat + (Math.random() - 0.5) * 0.02,
+        lon: base.lon + (Math.random() - 0.5) * 0.02
+    };
+}
+
+async function salvarRelato(relato) {
+    try {
+        todosRelatos.unshift(relato);
+        
+        const sucesso = await salvarRelatosNoBanco(todosRelatos);
+        
+        if (sucesso) {
+            mostrarNotificacao('✅ Relato enviado com sucesso! Salvo no banco de dados.', 'success');
+        } else {
+            mostrarNotificacao('✅ Relato enviado! (Salvo localmente)', 'success');
+        }
+        
+        adicionarRelatoLista(relato);
+        atualizarMetricas();
+        atualizarRankings();
+        atualizarDashboardEstadual();
+        
+    } catch (error) {
+        console.error('Erro ao salvar relato:', error);
+        mostrarNotificacao('❌ Erro ao salvar relato. Tente novamente.', 'error');
+    }
+}
+
+function adicionarRelatoLista(relato) {
+    const container = document.getElementById('listaRelatos');
+    const novoRelatoHTML = `
+        <div class="border-l-4 ${getCorBorda(relato.gravidade)} bg-gray-50 p-4 rounded-r-lg ranking-item">
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <span class="font-semibold">${relato.bairro}, ${relato.cidade} - ${relato.estado}</span>
+                    <span class="text-sm text-gray-500 ml-2">${relato.data}</span>
+                </div>
+                <span class="text-xs font-semibold px-2 py-1 rounded-full ${getCorGravidade(relato.gravidade)}">
+                    ${relato.gravidade.toUpperCase()}
+                </span>
+            </div>
+            <p class="text-gray-700 text-sm">${relato.descricao}</p>
+            <div class="flex justify-between items-center mt-3">
+                <span class="text-xs text-gray-500">${getTipoTexto(relato.tipo)}</span>
+                <button onclick="verDetalhesRelato(${relato.id})" class="text-green-600 text-xs font-semibold flex items-center">
+                    <i class="fas fa-search mr-1"></i> Ver Impacto
+                </button>
+            </div>
+        </div>
+    `;
+    
+    if (container.children.length > 0 && !container.children[0].classList.contains('text-center')) {
+        container.insertAdjacentHTML('afterbegin', novoRelatoHTML);
+    } else {
+        container.innerHTML = novoRelatoHTML;
+    }
+}
+
+function verDetalhesRelato(id) {
+    const relato = todosRelatos.find(r => r.id === id);
+    if (relato) {
+        const impactos = gerarAnaliseImpacto(relato);
+        alert(`📊 ANÁLISE DE IMPACTO - Relato #${id}\n\n` +
+              `📍 Local: ${relato.bairro}, ${relato.cidade}\n` +
+              `⚠️ Problema: ${getTipoTexto(relato.tipo)}\n` +
+              `🚨 Gravidade: ${relato.gravidade}\n\n` +
+              `📈 IMPACTOS IDENTIFICADOS:\n` +
+              `• ${impactos.saude}\n` +
+              `• ${impactos.alimentar}\n` +
+              `• ${impactos.seguranca}\n\n` +
+              `💡 RECOMENDAÇÕES:\n${impactos.recomendacoes}`);
+    }
+}
+
+// ========== FUNÇÕES AUXILIARES ==========
+function getCorBorda(gravidade) {
+    const cores = {
+        'baixa': 'border-green-500',
+        'media': 'border-yellow-500',
+        'alta': 'border-orange-500', 
+        'critica': 'border-red-500'
+    };
+    return cores[gravidade] || 'border-gray-500';
+}
+
+function getCorGravidade(gravidade) {
+    const cores = {
+        'baixa': 'bg-green-100 text-green-800',
+        'media': 'bg-yellow-100 text-yellow-800',
+        'alta': 'bg-orange-100 text-orange-800',
+        'critica': 'bg-red-100 text-red-800'
+    };
+    return cores[gravidade] || 'bg-gray-100 text-gray-800';
+}
+
+function getTipoTexto(tipo) {
+    const tipos = {
+        'seca': 'Seca/Estiagem',
+        'inundacao': 'Inundação/Alagamento',
+        'queimada': 'Queimada/Incêndio',
+        'desmatamento': 'Desmatamento',
+        'inseguranca_alimentar': 'Falta de Alimentos',
+        'aumento_precos': 'Aumento de Preços',
+        'perda_safra': 'Perda de Safra',
+        'agua_contaminada': 'Água Contaminada', 
+        'doencas': 'Surtos de Doenças',
+        'agricultura': 'Perda Agrícola',
+        'outro': 'Outro Problema'
+    };
+    return tipos[tipo] || 'Problema Ambiental';
 }
 
 function getNomeEstado(sigla) {
@@ -547,21 +877,33 @@ function getNomeEstado(sigla) {
     return estados[sigla] || sigla;
 }
 
-// Atualizar o dashboard quando novos relatos forem adicionados
-function atualizarDashboardEstadual() {
-    const estadoSelecionado = document.getElementById('selecionarEstado').value;
-    if (estadoSelecionado) {
-        carregarDashboardEstadual();
-    }
+function atualizarMetricas() {
+    const relatosAtivos = todosRelatos.filter(r => r.status === 'ativo').length;
+    document.getElementById('relatosAtivos').textContent = relatosAtivos;
 }
 
-// MODIFICAR a função salvarRelato existente para incluir esta linha:
-function salvarRelato(relato) {
-    let relatos = JSON.parse(localStorage.getItem('relatosEcoImpacto') || '[]');
-    relatos.unshift(relato);
-    localStorage.setItem('relatosEcoImpacto', JSON.stringify(relatos));
-    todosRelatos = relatos;
+function mostrarNotificacao(mensagem, tipo) {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+        tipo === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-${tipo === 'success' ? 'check' : 'exclamation-triangle'} mr-2"></i>
+            <span>${mensagem}</span>
+        </div>
+    `;
     
-    // NOVA LINHA: Atualizar dashboard estadual quando novo relato for adicionado
-    atualizarDashboardEstadual();
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 5000);
 }
+
+function showError(message) {
+    const alertBanner = document.getElementById('alertas');
+    alertBanner.className = 'bg-red-50 py-4 border-b-4 border-red-500 pulse-alert';
+    document.getElementById('alertaDestaque').textContent = message;
+}
+
