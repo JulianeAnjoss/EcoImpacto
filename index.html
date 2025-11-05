@@ -617,7 +617,7 @@
                         <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Problema</label>
                         <select id="tipoProblema" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" required>
                             <option value="">Selecione...</option>
-                            <option value="seca">Altas temperaturas</option>
+                            <option value="altas_temperaturas">Altas temperaturas</option>
                             <option value="seca">Seca/Estiagem</option>
                             <option value="inundacao">Inundação/Alagamento</option>
                             <option value="queimada">Queimada/Fogo</option>
@@ -1981,6 +1981,12 @@
 
         function gerarAnaliseImpacto(relato) {
             const analises = {
+altas_temperaturas: {
+    saude: "Risco de insolação, desidratação e agravamento de doenças cardiovasculares",
+    alimentar: "Perda de produtividade agrícola e deterioração acelerada de alimentos perecíveis",
+    seguranca: "Aumento do risco de incêndios urbanos e florestais",
+    recomendacoes: "Evitar exposição prolongada ao sol\nHidratar-se regularmente\nManter alimentos refrigerados\nAcompanhar alertas meteorológicos"
+},
                 seca: {
                     saude: "Risco de desidratação e problemas renais",
                     alimentar: "Redução na produção de alimentos frescos",
@@ -2349,6 +2355,7 @@
 
         function getTipoTexto(tipo) {
             const tipos = {
+                'altas_temperaturas': 'Altas temperaturas',
                 'seca': 'Seca/Estiagem',
                 'inundacao': 'Inundação/Alagamento',
                 'queimada': 'Queimada/Incêndio',
